@@ -27,6 +27,11 @@ const layout = {
 }
 
 const Main: Component = () => {
+    const pad = 0.1
+    const scale = scaleLinear()
+        .domain([0, 1])
+        .range([pad, 1 - pad])
+
     let ws: WebSocket
     let isHost = true
 
@@ -79,7 +84,7 @@ const Main: Component = () => {
         ws.send(JSON.stringify({ command: 'connected' }))
 
         drawBoard()
-        drawPieces()
+        drawPieces(layout.start)
     })
 
     createEffect(() => {
@@ -87,10 +92,6 @@ const Main: Component = () => {
     })
 
     const drawBoard = () => {
-        const pad = 0.1
-        const scale = scaleLinear()
-            .domain([0, 1])
-            .range([pad, 1 - pad])
         const svg = select('#board')
 
         svg.selectAll('line')
@@ -112,35 +113,19 @@ const Main: Component = () => {
             .attr('fill', '#555')
     }
 
-    const drawPieces = () => {
-        const pad = 0.1
-        const scale = scaleLinear()
-            .domain([0, 1])
-            .range([pad, 1 - pad])
+    const drawPieces = (state: number[]) => {
+        const piecesPerPlayer = state.length / 2
         const svg = select('#board')
 
-        const pieceRadius = 0.06
-        const piecesPerPlayer = layout.start.length / 2
-        svg.selectAll('.white-piece')
-            .data(layout.start.slice(0, piecesPerPlayer))
+        svg.selectAll('.piece')
+            .data(layout.start)
             .join('circle')
             .attr('class', 'white-piece')
             .attr('cx', d => scale(layout.nodes[d][0]))
             .attr('cy', d => scale(layout.nodes[d][1]))
-            .attr('r', pieceRadius)
-            .attr('fill', '#fff')
-            .attr('stroke', '#999')
-            .attr('stroke-width', 0.01)
-
-        svg.selectAll('.red-piece')
-            .data(layout.start.slice(piecesPerPlayer))
-            .join('circle')
-            .attr('class', 'red-piece')
-            .attr('cx', d => scale(layout.nodes[d][0]))
-            .attr('cy', d => scale(layout.nodes[d][1]))
-            .attr('r', pieceRadius)
-            .attr('fill', '#aa0000')
-            .attr('stroke', '#660000')
+            .attr('r', 0.06)
+            .attr('fill', (_, i) => (i < piecesPerPlayer ? '#fff' : '#aa0000'))
+            .attr('stroke', (_, i) => (i < piecesPerPlayer ? '#999' : '#660000'))
             .attr('stroke-width', 0.01)
     }
 
