@@ -1,7 +1,7 @@
 /* @refresh reload */
 
 import { scaleLinear, select } from 'd3'
-import { Component, Match, Switch, createSignal, onMount } from 'solid-js'
+import { Component, Match, Switch, createEffect, createSignal, onMount } from 'solid-js'
 import { render } from 'solid-js/web'
 import { wslobbyUrl } from './constant'
 import './index.css'
@@ -30,7 +30,7 @@ const Main: Component = () => {
     let ws: WebSocket
     let isHost = true
 
-    const [$lobbyId, setLobbyId] = createSignal(Math.floor(Math.random() * 10000))
+    const [$lobbyId, setLobbyId] = createSignal(0)
     const [$state, setState] = createSignal<State>('waitJoin')
     const [$isWhite, setIsWhite] = createSignal(Math.random() > 0.5)
 
@@ -42,13 +42,13 @@ const Main: Component = () => {
     onMount(async () => {
         let lobbyId = Number.parseInt(location.pathname.slice(1))
         if (!Number.isNaN(lobbyId)) {
-            setLobbyId(lobbyId)
             isHost = false
             setState($isWhite() ? 'move' : 'opponent')
         } else {
-            lobbyId = $lobbyId()
+            lobbyId = Math.floor(Math.random() * 10000)
         }
         history.pushState({}, '', `/${lobbyId.toString()}`)
+        setLobbyId(lobbyId)
 
         ws = new WebSocket(`${wslobbyUrl}/${lobbyId}`)
         ws.addEventListener('message', async e => {
@@ -56,7 +56,7 @@ const Main: Component = () => {
             console.debug('msg', msg)
             switch (msg.command) {
                 case 'connected': {
-                    setState('move')
+                    if ($state() === 'waitJoin') setState($isWhite() ? 'move' : 'opponent')
                     if (isHost) ws.send(JSON.stringify({ command: 'color', isWhite: !$isWhite() }))
                     break
                 }
@@ -77,6 +77,10 @@ const Main: Component = () => {
         ws.send(JSON.stringify({ command: 'connected' }))
 
         drawBoard()
+    })
+
+    createEffect(() => {
+        console.debug(`your color is ${$isWhite() ? 'white' : 'red'}`)
     })
 
     const drawBoard = () => {
