@@ -10,17 +10,18 @@ type State = 'waitJoin' | 'move' | 'opponent'
 // biome-ignore format:
 const layout = {
     nodes: [
-        [0/2, 0/4], [1/2, 0/4], [2/2, 0/4],
-        [0/2, 1/4], [1/2, 1/4], [2/2, 1/4],
-                    [1/2, 2/4],
-        [0/2, 3/4], [1/2, 3/4], [2/2, 3/4],
-        [0/2, 4/4], [1/2, 4/4], [2/2, 4/4],
+        [0/2, 0/3], [1/2, 0/3], [2/2, 0/3],
+        [0/2, 1/3], [1/2, 1/3], [2/2, 1/3],
+        [0/2, 2/3], [1/2, 2/3], [2/2, 2/3],
+        [0/2, 3/3], [1/2, 3/3], [2/2, 3/3],
     ],
     edges: [
-        [0, 1], [1, 2], [3, 4], [4, 5], [7, 8], [8, 9], [10, 11], [11, 12],
-        [0, 3], [1, 4], [2, 5], [4, 6], [6, 8], [7, 10], [8, 11], [9, 12]
+        [0, 1], [1, 2], [3, 4], [4, 5], [6, 7], [7, 8], [9, 10], [10, 11],
+        [0, 3], [1, 4], [2, 5],
+        [4, 7],
+        [6, 9], [7, 10], [8, 11]
     ],
-    start: [0, 1, 2, 10, 11, 12]
+    start: [0, 1, 2, 9, 10, 11]
 }
 
 const Main: Component = () => {
@@ -97,7 +98,7 @@ const Main: Component = () => {
                     </Match>
                 </Switch>
             </header>
-            <svg id="board" viewBox="0 0 1 1" width="100%" height="100%" />
+            <svg id="board" viewBox="0 0 1 1" preserveAspectRatio="xMidYMin meet" />
             <footer>
                 <div class="rules">
                     <span>rules:</span>
@@ -106,7 +107,7 @@ const Main: Component = () => {
                     <span>- players take turns by playing one piece</span>
                     <span>- piece can only move along the edge to the unoccupied node</span>
                     <span>- same piece can only move along the same edge twice in a row</span>
-                    <span>- no legal move skips the turn</span>
+                    <span>- zero legal moves skips the turn</span>
                 </div>
                 <div class="credits">
                     <span>
