@@ -1,0 +1,23 @@
+{
+    "name": "opposite",
+    "version": "0.0.1",
+    "description": "Online version of a two player board game",
+    "scripts": {
+        "build": "vite build",
+        "start": "vite"
+    },
+    "type": "module",
+    "license": "MIT",
+    "packageManager": "pnpm@9.4.0",
+    "devDependencies": {
+        "@types/node": "24.5.2",
+        "typescript": "5.9.2",
+        "vite": "7.1.6",
+        "vite-plugin-solid": "2.11.8",
+        "@types/d3": "7.4.3"
+    },
+    "dependencies": {
+        "solid-js": "1.9.10",
+        "d3": "7.9.0"
+    }
+}
