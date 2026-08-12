@@ -133,117 +133,15 @@ select {
     header {
         display: flex;
         flex-direction: column;
-        font-size: 3rem;
         text-align: center;
-    }
 
-    .piles {
-        display: flex;
-        justify-content: space-between;
-
-        .left {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .pile {
-            display: flex;
-            width: 5rem;
-            height: 5rem;
-            background-color: var(--bg);
-            color: var(--fg3);
-            border: 2px solid;
-            font-size: 1.5rem;
-            cursor: pointer;
-            user-select: none;
-
-            span {
-                margin: 0.25rem;
-            }
-
-            &.empty {
-                color: var(--bg3);
-            }
-
-            &.barehand {
-                color: var(--monster);
-            }
-        }
-
-        .details {
-            display: flex;
-            flex-direction: column;
-            font-size: 0.8rem;
-
-            .detail {
-                display: flex;
-                gap: 0 .5ch;
-            }
+        .title {
+            font-size: 3rem;
         }
     }
 
-    .room {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .card {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        border: 2px solid;
-        width: 5rem;
-        height: 5rem;
-        font-size: 1.rem;
-        cursor: pointer;
-        user-select: none;
-
-        .value {
-            font-size: 2.5rem;
-            margin-bottom: -.5rem;
-        }
-
-        &.empty {
-            color: var(--bg3);
-        }
-    }
-
-    .tools {
-        display: flex;
-        justify-content: space-between;
-
-        .equipped {
-            display: flex;
-            gap: 1rem;
-
-            .slain {
-                position: relative;
-
-                .card {
-                    position: absolute;
-                }
-            }
-        }
-
-        .stats {
-            display: flex;
-            flex-direction: column;
-            align-self: flex-end;
-            font-size: .8rem;
-
-            .stat {
-                display: flex;
-                justify-content: flex-end;
-
-                span {
-                    display: inline-block;
-                    min-width: 7ch;
-                    text-align: right;
-                }
-            }
-        }
+    svg {
+        min-height: 20rem;
     }
 
     footer {
@@ -251,6 +149,7 @@ select {
         font-size: .75rem;
         justify-content: space-between;
         color: var(--fg2);
+        padding: 1rem;
 
         .rules, .credits {
             display: flex;
