@@ -61,6 +61,8 @@ const Main: Component = () => {
                     break
                 }
                 case 'color': {
+                    // color command is sent by true host, you're not a host then
+                    isHost = false
                     setIsWhite(msg.isWhite)
                     setState(msg.isWhite ? 'move' : 'opponent')
                     break
@@ -77,6 +79,7 @@ const Main: Component = () => {
         ws.send(JSON.stringify({ command: 'connected' }))
 
         drawBoard()
+        drawPieces()
     })
 
     createEffect(() => {
@@ -88,7 +91,6 @@ const Main: Component = () => {
         const scale = scaleLinear()
             .domain([0, 1])
             .range([pad, 1 - pad])
-
         const svg = select('#board')
 
         svg.selectAll('line')
@@ -108,6 +110,38 @@ const Main: Component = () => {
             .attr('cy', d => scale(d[1]))
             .attr('r', 0.01)
             .attr('fill', '#555')
+    }
+
+    const drawPieces = () => {
+        const pad = 0.1
+        const scale = scaleLinear()
+            .domain([0, 1])
+            .range([pad, 1 - pad])
+        const svg = select('#board')
+
+        const pieceRadius = 0.06
+        const piecesPerPlayer = layout.start.length / 2
+        svg.selectAll('.white-piece')
+            .data(layout.start.slice(0, piecesPerPlayer))
+            .join('circle')
+            .attr('class', 'white-piece')
+            .attr('cx', d => scale(layout.nodes[d][0]))
+            .attr('cy', d => scale(layout.nodes[d][1]))
+            .attr('r', pieceRadius)
+            .attr('fill', '#fff')
+            .attr('stroke', '#999')
+            .attr('stroke-width', 0.01)
+
+        svg.selectAll('.red-piece')
+            .data(layout.start.slice(piecesPerPlayer))
+            .join('circle')
+            .attr('class', 'red-piece')
+            .attr('cx', d => scale(layout.nodes[d][0]))
+            .attr('cy', d => scale(layout.nodes[d][1]))
+            .attr('r', pieceRadius)
+            .attr('fill', '#aa0000')
+            .attr('stroke', '#660000')
+            .attr('stroke-width', 0.01)
     }
 
     return (
@@ -130,10 +164,10 @@ const Main: Component = () => {
                         </span>
                     </Match>
                     <Match when={$state() === 'move'}>
-                        <span>your turn</span>
+                        <span>your turn ({$isWhite() ? 'white' : 'red'})</span>
                     </Match>
                     <Match when={$state() === 'opponent'}>
-                        <span>opponent's turn</span>
+                        <span>opponent's turn ({$isWhite() ? 'red' : 'white'})</span>
                     </Match>
                 </Switch>
             </header>
