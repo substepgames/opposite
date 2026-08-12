@@ -3,9 +3,11 @@
 import { scaleLinear, select } from 'd3'
 import { Component, Match, Switch, createSignal, onMount } from 'solid-js'
 import { render } from 'solid-js/web'
+import { wslobbyUrl } from './constant'
 import './index.css'
 
 type State = 'waitJoin' | 'move' | 'opponent'
+type Message = { command: 'connected' } | { command: 'color'; isWhite: boolean }
 
 // biome-ignore format:
 const layout = {
@@ -25,22 +27,55 @@ const layout = {
 }
 
 const Main: Component = () => {
+    let ws: WebSocket
+    let isHost = true
+
     const [$lobbyId, setLobbyId] = createSignal(Math.floor(Math.random() * 10000))
     const [$state, setState] = createSignal<State>('waitJoin')
+    const [$isWhite, setIsWhite] = createSignal(Math.random() > 0.5)
+
     const $inviteUrl = () => {
         const lobbyId = $lobbyId()
         return `${location.protocol}://${location.host}/${lobbyId}`
     }
 
-    onMount(() => {
+    onMount(async () => {
         let lobbyId = Number.parseInt(location.pathname.slice(1))
         if (!Number.isNaN(lobbyId)) {
             setLobbyId(lobbyId)
-            setState('move')
+            isHost = false
+            setState($isWhite() ? 'move' : 'opponent')
         } else {
             lobbyId = $lobbyId()
         }
         history.pushState({}, '', `/${lobbyId.toString()}`)
+
+        ws = new WebSocket(`${wslobbyUrl}/${lobbyId}`)
+        ws.addEventListener('message', async e => {
+            const msg: Message = JSON.parse(await (e.data as Blob).text())
+            console.debug('msg', msg)
+            switch (msg.command) {
+                case 'connected': {
+                    setState('move')
+                    if (isHost) ws.send(JSON.stringify({ command: 'color', isWhite: !$isWhite() }))
+                    break
+                }
+                case 'color': {
+                    setIsWhite(msg.isWhite)
+                    setState(msg.isWhite ? 'move' : 'opponent')
+                    break
+                }
+            }
+        })
+        ws.addEventListener('error', () => alert('server is down :('))
+        await new Promise<void>(resolve =>
+            ws.addEventListener('open', () => {
+                console.debug('ws connected')
+                resolve()
+            })
+        )
+        ws.send(JSON.stringify({ command: 'connected' }))
+
         drawBoard()
     })
 
