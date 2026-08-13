@@ -38,6 +38,8 @@ const Main: Component = () => {
     const [$lobbyId, setLobbyId] = createSignal(0)
     const [$state, setState] = createSignal<State>('waitJoin')
     const [$isWhite, setIsWhite] = createSignal(Math.random() > 0.5)
+    const [$boardState, setBoardState] = createSignal(layout.start)
+    const [$activePiece, setActivePiece] = createSignal<number | undefined>()
 
     const $inviteUrl = () => {
         const lobbyId = $lobbyId()
@@ -84,17 +86,22 @@ const Main: Component = () => {
         ws.send(JSON.stringify({ command: 'connected' }))
 
         drawBoard()
-        drawPieces(layout.start)
     })
 
     createEffect(() => {
         console.debug(`your color is ${$isWhite() ? 'white' : 'red'}`)
     })
 
+    createEffect(() => {
+        $activePiece()
+        const boardState = $boardState()
+        drawPieces(boardState)
+    })
+
     const drawBoard = () => {
         const svg = select('#board')
 
-        svg.selectAll('line')
+        svg.selectAll('.edge')
             .data(layout.edges)
             .join('line')
             .attr('x1', d => scale(layout.nodes[d[0]][0]))
@@ -103,30 +110,61 @@ const Main: Component = () => {
             .attr('y2', d => scale(layout.nodes[d[1]][1]))
             .attr('stroke', '#555')
             .attr('stroke-width', 0.005)
+            .lower()
 
-        svg.selectAll('circle')
+        svg.selectAll('.node')
             .data(layout.nodes)
             .join('circle')
             .attr('cx', d => scale(d[0]))
             .attr('cy', d => scale(d[1]))
             .attr('r', 0.01)
             .attr('fill', '#555')
+            .lower()
     }
 
     const drawPieces = (state: number[]) => {
         const piecesPerPlayer = state.length / 2
         const svg = select('#board')
 
-        svg.selectAll('.piece')
-            .data(layout.start)
+        svg.selectAll('.eligible')
+            // TODO: filter legal movess
+            .data(layout.nodes, (_, i) => i)
             .join('circle')
-            .attr('class', 'white-piece')
+            .attr('class', 'eligible')
+            .attr('cx', d => scale(d[0]))
+            .attr('cy', d => scale(d[1]))
+            .attr('r', 0.06)
+            .attr('fill', '#fff')
+            .attr('opacity', 0)
+            .on('click', (_, d) => {
+                const i = layout.nodes.indexOf(d)
+                const activePiece = $activePiece()
+                if (activePiece === undefined) return
+                const state = [...$boardState()]
+                state[state.indexOf(activePiece)] = i
+                setBoardState(state)
+                setActivePiece(undefined)
+            })
+
+        svg.selectAll('.piece')
+            .data(state)
+            .join('circle')
+            .attr('class', 'piece')
             .attr('cx', d => scale(layout.nodes[d][0]))
             .attr('cy', d => scale(layout.nodes[d][1]))
             .attr('r', 0.06)
             .attr('fill', (_, i) => (i < piecesPerPlayer ? '#fff' : '#aa0000'))
-            .attr('stroke', (_, i) => (i < piecesPerPlayer ? '#999' : '#660000'))
+            .attr('stroke', (d, i) => (d === $activePiece() ? '#99ff55' : i < piecesPerPlayer ? '#999' : '#660000'))
             .attr('stroke-width', 0.01)
+            .on('click', (_, d) => {
+                const activePiece = $activePiece()
+                if (activePiece === d) {
+                    setActivePiece(undefined)
+                    return
+                }
+                // TODO: is ours?
+                setActivePiece(d)
+            })
     }
 
     return (
