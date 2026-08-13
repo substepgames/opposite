@@ -1,4 +1,4 @@
-# Opposite
+# Opposites
 
 Online version of a two player board game
 

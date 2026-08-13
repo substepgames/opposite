@@ -204,7 +204,7 @@ const Main: Component = () => {
     return (
         <div class="game">
             <header>
-                <span class="title">Opposite</span>
+                <span class="title">Opposites</span>
                 <div class="state">
                     <Switch>
                         <Match when={$state() === 'invite'}>
@@ -258,7 +258,7 @@ const Main: Component = () => {
                         implementation by <a href="https://substepgames.com/">Substep Games</a>
                     </span>
                     <span>
-                        <a href="https://github.com/substepgames/opposite">source</a>
+                        <a href="https://github.com/substepgames/opposites">source</a>
                     </span>
                 </div>
             </footer>
