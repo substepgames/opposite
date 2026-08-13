@@ -133,10 +133,17 @@ select {
     header {
         display: flex;
         flex-direction: column;
-        text-align: center;
+        align-items: center;
 
         .title {
             font-size: 3rem;
+        }
+
+        .state {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            height: 2rem;
         }
     }
 

@@ -164,6 +164,7 @@ const Main: Component = () => {
             .attr('stroke', (d, i) => (d === $activePiece() ? '#99ff55' : i < piecesPerPlayer ? '#999' : '#660000'))
             .attr('stroke-width', 0.01)
             .on('click', (_, d) => {
+                if ($state() !== 'move') return
                 const activePiece = $activePiece()
                 if (activePiece === d) {
                     setActivePiece(undefined)
@@ -174,35 +175,45 @@ const Main: Component = () => {
             })
     }
 
+    const becomeHost = () => {
+        isHost = true
+        setState('invite')
+    }
+
     return (
         <div class="game">
             <header>
                 <span class="title">Opposite</span>
-                <Switch>
-                    <Match when={$state() === 'invite'}>
-                        <span>
-                            waiting for opponent, invite{' '}
-                            <a
-                                href={$inviteUrl()}
-                                onClick={e => {
-                                    e.preventDefault()
-                                    alert('send it to your friend!')
-                                }}
-                            >
-                                {$inviteUrl()}
-                            </a>
-                        </span>
-                    </Match>
-                    <Match when={$state() === 'wait'}>
-                        <span>waiting for host</span>
-                    </Match>
-                    <Match when={$state() === 'move'}>
-                        <span>your turn ({$isWhite() ? 'white' : 'red'})</span>
-                    </Match>
-                    <Match when={$state() === 'opponent'}>
-                        <span>opponent's turn ({$isWhite() ? 'red' : 'white'})</span>
-                    </Match>
-                </Switch>
+                <div class="state">
+                    <Switch>
+                        <Match when={$state() === 'invite'}>
+                            <span>
+                                waiting for opponent, invite{' '}
+                                <a
+                                    href={$inviteUrl()}
+                                    onClick={e => {
+                                        e.preventDefault()
+                                        alert('send it to your friend!')
+                                    }}
+                                >
+                                    {$inviteUrl()}
+                                </a>
+                            </span>
+                        </Match>
+                        <Match when={$state() === 'wait'}>
+                            <span>waiting for host</span>
+                            <button type="button" onClick={becomeHost}>
+                                become host
+                            </button>
+                        </Match>
+                        <Match when={$state() === 'move'}>
+                            <span>your turn ({$isWhite() ? 'white' : 'red'})</span>
+                        </Match>
+                        <Match when={$state() === 'opponent'}>
+                            <span>opponent's turn ({$isWhite() ? 'red' : 'white'})</span>
+                        </Match>
+                    </Switch>
+                </div>
             </header>
             <svg id="board" viewBox="0 0 1 1" preserveAspectRatio="xMidYMin meet" />
             <footer>
