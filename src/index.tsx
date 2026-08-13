@@ -6,7 +6,7 @@ import { render } from 'solid-js/web'
 import { wslobbyUrl } from './constant'
 import './index.css'
 
-type State = 'waitJoin' | 'move' | 'opponent'
+type State = 'invite' | 'wait' | 'move' | 'opponent'
 type Message = { command: 'connected' } | { command: 'color'; isWhite: boolean }
 
 // biome-ignore format:
@@ -36,7 +36,7 @@ const Main: Component = () => {
     let isHost = true
 
     const [$lobbyId, setLobbyId] = createSignal(0)
-    const [$state, setState] = createSignal<State>('waitJoin')
+    const [$state, setState] = createSignal<State>('invite')
     const [$isWhite, setIsWhite] = createSignal(Math.random() > 0.5)
     const [$boardState, setBoardState] = createSignal(layout.start)
     const [$activePiece, setActivePiece] = createSignal<number | undefined>()
@@ -50,7 +50,7 @@ const Main: Component = () => {
         let lobbyId = Number.parseInt(location.pathname.slice(1))
         if (!Number.isNaN(lobbyId)) {
             isHost = false
-            setState($isWhite() ? 'move' : 'opponent')
+            setState('wait')
         } else {
             lobbyId = Math.floor(Math.random() * 10000)
         }
@@ -63,7 +63,7 @@ const Main: Component = () => {
             console.debug('msg', msg)
             switch (msg.command) {
                 case 'connected': {
-                    if ($state() === 'waitJoin') setState($isWhite() ? 'move' : 'opponent')
+                    if ($state() === 'invite') setState($isWhite() ? 'move' : 'opponent')
                     if (isHost) ws.send(JSON.stringify({ command: 'color', isWhite: !$isWhite() }))
                     break
                 }
@@ -179,7 +179,7 @@ const Main: Component = () => {
             <header>
                 <span class="title">Opposite</span>
                 <Switch>
-                    <Match when={$state() === 'waitJoin'}>
+                    <Match when={$state() === 'invite'}>
                         <span>
                             waiting for opponent, invite{' '}
                             <a
@@ -192,6 +192,9 @@ const Main: Component = () => {
                                 {$inviteUrl()}
                             </a>
                         </span>
+                    </Match>
+                    <Match when={$state() === 'wait'}>
+                        <span>waiting for host</span>
                     </Match>
                     <Match when={$state() === 'move'}>
                         <span>your turn ({$isWhite() ? 'white' : 'red'})</span>
