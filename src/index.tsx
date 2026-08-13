@@ -7,7 +7,7 @@ import { wslobbyUrl } from './constant'
 import './index.css'
 
 type State = 'invite' | 'wait' | 'move' | 'opponent'
-type Message = { command: 'connected' } | { command: 'color'; isWhite: boolean }
+type Message = { command: 'connected' } | { command: 'color'; isWhite: boolean } | { command: 'move'; state: number[] }
 
 // biome-ignore format:
 const layout = {
@@ -74,6 +74,11 @@ const Main: Component = () => {
                     setState(msg.isWhite ? 'move' : 'opponent')
                     break
                 }
+                case 'move': {
+                    setBoardState(msg.state)
+                    setState('move')
+                    break
+                }
             }
         })
         ws.addEventListener('error', () => alert('server is down :('))
@@ -126,14 +131,39 @@ const Main: Component = () => {
         const piecesPerPlayer = state.length / 2
         const svg = select('#board')
 
+        svg.selectAll('.piece')
+            .data(state)
+            .join('circle')
+            .attr('class', 'piece')
+            .attr('cx', d => scale(layout.nodes[d][0]))
+            .attr('cy', d => scale(layout.nodes[d][1]))
+            .attr('r', 0.06)
+            .attr('fill', (_, i) => (i < piecesPerPlayer ? '#fff' : '#aa0000'))
+            .attr('stroke', (d, i) => (d === $activePiece() ? '#99ff55' : i < piecesPerPlayer ? '#999' : '#660000'))
+            .attr('stroke-width', 0.01)
+            .on('click', (_, d) => {
+                if ($state() !== 'move') return
+                const i = state.indexOf(d)
+                if (i < 0) return
+                const isWhitePiece = i < piecesPerPlayer
+                if (isWhitePiece !== $isWhite()) return
+                const activePiece = $activePiece()
+                if (activePiece === d) {
+                    setActivePiece(undefined)
+                    return
+                }
+                setActivePiece(d)
+            })
+
         svg.selectAll('.eligible')
             .data(
                 layout.nodes
                     .filter(() => $activePiece() !== undefined)
-                    .filter((_, i) =>
-                        layout.edges.find(
-                            e => (e[0] === i && e[1] === $activePiece()) || (e[1] === i && e[0] === $activePiece())
-                        )
+                    .filter(
+                        (_, i) =>
+                            layout.edges.find(
+                                e => (e[0] === i && e[1] === $activePiece()) || (e[1] === i && e[0] === $activePiece())
+                            ) && !state.includes(i)
                     )
             )
             .join('circle')
@@ -147,37 +177,28 @@ const Main: Component = () => {
                 const i = layout.nodes.indexOf(d)
                 const activePiece = $activePiece()
                 if (activePiece === undefined) return
+
                 const state = [...$boardState()]
                 state[state.indexOf(activePiece)] = i
                 setBoardState(state)
-                setActivePiece(undefined)
-            })
 
-        svg.selectAll('.piece')
-            .data(state)
-            .join('circle')
-            .attr('class', 'piece')
-            .attr('cx', d => scale(layout.nodes[d][0]))
-            .attr('cy', d => scale(layout.nodes[d][1]))
-            .attr('r', 0.06)
-            .attr('fill', (_, i) => (i < piecesPerPlayer ? '#fff' : '#aa0000'))
-            .attr('stroke', (d, i) => (d === $activePiece() ? '#99ff55' : i < piecesPerPlayer ? '#999' : '#660000'))
-            .attr('stroke-width', 0.01)
-            .on('click', (_, d) => {
-                if ($state() !== 'move') return
-                const activePiece = $activePiece()
-                if (activePiece === d) {
-                    setActivePiece(undefined)
-                    return
-                }
-                // TODO: is ours?
-                setActivePiece(d)
+                const msg: Message = { command: 'move', state: $boardState() }
+                ws.send(JSON.stringify(msg))
+                setState('opponent')
+
+                setActivePiece(undefined)
             })
     }
 
     const becomeHost = () => {
         isHost = true
         setState('invite')
+    }
+
+    const skipTurn = () => {
+        const msg: Message = { command: 'move', state: $boardState() }
+        ws.send(JSON.stringify(msg))
+        setState('opponent')
     }
 
     return (
@@ -208,6 +229,9 @@ const Main: Component = () => {
                         </Match>
                         <Match when={$state() === 'move'}>
                             <span>your turn ({$isWhite() ? 'white' : 'red'})</span>
+                            <button type="button" onClick={skipTurn}>
+                                skip turn
+                            </button>
                         </Match>
                         <Match when={$state() === 'opponent'}>
                             <span>opponent's turn ({$isWhite() ? 'red' : 'white'})</span>
