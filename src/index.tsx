@@ -127,15 +127,22 @@ const Main: Component = () => {
         const svg = select('#board')
 
         svg.selectAll('.eligible')
-            // TODO: filter legal movess
-            .data(layout.nodes, (_, i) => i)
+            .data(
+                layout.nodes
+                    .filter(() => $activePiece() !== undefined)
+                    .filter((_, i) =>
+                        layout.edges.find(
+                            e => (e[0] === i && e[1] === $activePiece()) || (e[1] === i && e[0] === $activePiece())
+                        )
+                    )
+            )
             .join('circle')
             .attr('class', 'eligible')
             .attr('cx', d => scale(d[0]))
             .attr('cy', d => scale(d[1]))
             .attr('r', 0.06)
             .attr('fill', '#fff')
-            .attr('opacity', 0)
+            .attr('opacity', 0.1)
             .on('click', (_, d) => {
                 const i = layout.nodes.indexOf(d)
                 const activePiece = $activePiece()
