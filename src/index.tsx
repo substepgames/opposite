@@ -40,6 +40,9 @@ const Main: Component = () => {
         .range([pad, 1 - pad])
 
     let ws: WebSocket
+    const sfx = {
+        move: new Audio('sfx/move.ogg')
+    }
 
     const [$lobbyId, setLobbyId] = createSignal(0)
     const [$state, setState] = createSignal<State>('invite')
@@ -54,6 +57,8 @@ const Main: Component = () => {
     }
 
     onMount(async () => {
+        await new Promise<void>(resolve => sfx.move.addEventListener('canplaythrough', () => resolve(), { once: true }))
+
         let lobbyId = Number.parseInt(location.pathname.slice(1))
         if (!Number.isNaN(lobbyId)) {
             setIsHost(false)
@@ -85,6 +90,7 @@ const Main: Component = () => {
                     setBoardState(msg.state)
                     setIsWhite(!msg.byWhite)
                     setState(msg.moved ? 'move' : 'opponent')
+                    if (msg.moved) sfx.move.play()
                     break
                 }
             }
@@ -203,6 +209,8 @@ const Main: Component = () => {
                 setState('opponent')
 
                 setActivePiece(undefined)
+
+                sfx.move.play()
             })
     }
 
