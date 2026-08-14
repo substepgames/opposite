@@ -27,7 +27,7 @@ type Layout = {
 }
 
 // biome-ignore format:
-const layout: Record<'hourglass' | 'hourglassExtended', Layout> = {
+const layout: Record<'hourglass' | 'hourglassExtended' | 'circle' | 'ladder', Layout> = {
     hourglass: {
         nodes: [
             [0/2, 0/3], [1/2, 0/3], [2/2, 0/3],
@@ -58,7 +58,41 @@ const layout: Record<'hourglass' | 'hourglassExtended', Layout> = {
             [0, 3], [1, 4], [2, 5], [9, 12], [10, 13], [11, 14]
         ],
         start: [0, 1, 2, 12, 13, 14]
-    }
+    },
+    circle: {
+        nodes: [
+            [0/2, 0/4], [1/2, 0/4], [2/2, 0/4],
+                        [1/2, 1/4],
+            [0/2, 2/4], [1/2, 2/4], [2/2, 2/4],
+                        [1/2, 3/4],
+            [0/2, 4/4], [1/2, 4/4], [2/2, 4/4],
+        ],
+        edges: [
+            [0, 3], [1, 3], [2, 3],
+            [4, 5], [5, 6],
+            [3, 4], [3,5], [3, 6],
+            [7, 4], [7, 5], [7, 6],
+            [8, 7], [9, 7], [10, 7],
+        ],
+        start: [0, 1, 2, 8, 9, 10]
+    },
+    ladder: {
+        nodes: [
+            [0/2, 0/5], [1/2, 0/5], [2/2, 0/5],
+                        [1/2, 1/5],
+            [0/2, 2/5], [1/2, 2/5],
+                        [1/2, 3/5], [2/2, 3/5],
+                        [1/2, 4/5],
+            [0/2, 5/5], [1/2, 5/5], [2/2, 5/5],
+        ],
+        edges: [
+            [0, 3], [1, 3], [2, 3],
+            [1, 3], [3, 5], [5, 6], [6, 8],
+            [4, 5], [6, 7],
+            [9, 8], [10, 8], [11, 8],
+        ],
+        start: [0, 1, 2, 9, 10, 11]
+    },
 }
 
 const Main: Component = () => {
@@ -76,7 +110,7 @@ const Main: Component = () => {
     const [$state, setState] = createSignal<State>('invite')
     const [$color, setColor] = createSignal(Math.random() > 0.5)
     const [$isHost, setIsHost] = createSignal(true)
-    const [$layout, setLayout] = createSignal<keyof typeof layout>('hourglassExtended')
+    const [$layout, setLayout] = createSignal<keyof typeof layout>('hourglass')
     const [$boardState, setBoardState] = createSignal(layout[$layout()].start)
     const [$activePiece, setActivePiece] = createSignal<number | undefined>()
 
@@ -181,7 +215,7 @@ const Main: Component = () => {
     }
 
     const drawPieces = (layout: Layout, state: number[]) => {
-        if (layout.nodes.length < Math.max(...state)) return
+        if (layout.nodes.length <= Math.max(...state)) return
         const piecesPerPlayer = state.length / 2
         const svg = select('#board')
 
@@ -191,7 +225,7 @@ const Main: Component = () => {
             .attr('class', 'piece')
             .attr('cx', d => scale(layout.nodes[d][0]))
             .attr('cy', d => scale(layout.nodes[d][1]))
-            .attr('r', 0.06)
+            .attr('r', 0.05)
             .attr('fill', (_, i) => (i < piecesPerPlayer ? '#fff' : '#aa0000'))
             .attr('stroke', (d, i) => (d === $activePiece() ? '#99ff55' : i < piecesPerPlayer ? '#999' : '#660000'))
             .attr('stroke-width', 0.01)
@@ -224,7 +258,7 @@ const Main: Component = () => {
             .attr('class', 'eligible')
             .attr('cx', d => scale(d[0]))
             .attr('cy', d => scale(d[1]))
-            .attr('r', 0.06)
+            .attr('r', 0.05)
             .attr('fill', '#fff')
             .attr('opacity', 0.1)
             .on('click', (_, d) => {

@@ -118,6 +118,10 @@ select {
     outline: none;
     border-width: 1px;
     font-size: 1rem;
+
+    &:disabled {
+        color: var(--fg3);
+    }
 }
 
 #root {
