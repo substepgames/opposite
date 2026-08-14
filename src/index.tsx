@@ -1,7 +1,7 @@
 /* @refresh reload */
 
 import { scaleLinear, select } from 'd3'
-import { Component, Match, Switch, createEffect, createSignal, onMount } from 'solid-js'
+import { Component, For, Match, Switch, createEffect, createSignal, onMount } from 'solid-js'
 import { render } from 'solid-js/web'
 import './index.css'
 
@@ -121,8 +121,8 @@ const Main: Component = () => {
                     break
                 }
                 case 'new': {
-                    setLayout(msg.layout)
                     setBoardState(msg.state)
+                    setLayout(msg.layout)
                     setColor(msg.color)
                     setState(msg.move ? 'move' : 'opponent')
                     break
@@ -137,14 +137,17 @@ const Main: Component = () => {
             })
         )
         sendMessage({ command: 'connected' })
+    })
 
+    createEffect(() => {
         drawBoard(layout[$layout()])
     })
 
     createEffect(() => {
         $activePiece()
         const boardState = $boardState()
-        drawPieces(layout[$layout()], boardState)
+        const l = layout[$layout()]
+        drawPieces(l, boardState)
     })
 
     const sendMessage = (message: Message) => {
@@ -157,6 +160,7 @@ const Main: Component = () => {
         svg.selectAll('.edge')
             .data(layout.edges)
             .join('line')
+            .attr('class', 'edge')
             .attr('x1', d => scale(layout.nodes[d[0]][0]))
             .attr('y1', d => scale(layout.nodes[d[0]][1]))
             .attr('x2', d => scale(layout.nodes[d[1]][0]))
@@ -168,6 +172,7 @@ const Main: Component = () => {
         svg.selectAll('.node')
             .data(layout.nodes)
             .join('circle')
+            .attr('class', 'node')
             .attr('cx', d => scale(d[0]))
             .attr('cy', d => scale(d[1]))
             .attr('r', 0.01)
@@ -176,6 +181,7 @@ const Main: Component = () => {
     }
 
     const drawPieces = (layout: Layout, state: number[]) => {
+        if (layout.nodes.length < Math.max(...state)) return
         const piecesPerPlayer = state.length / 2
         const svg = select('#board')
 
@@ -246,7 +252,6 @@ const Main: Component = () => {
 
     const newGame = () => {
         const state = [...layout[$layout()].start]
-        setIsHost(true)
         setBoardState(state)
         const color = !$color()
         setColor(color)
@@ -264,6 +269,17 @@ const Main: Component = () => {
             <header>
                 <span class="title">Opposites</span>
                 <div class="controls">
+                    <select
+                        value={$layout()}
+                        onInput={e => {
+                            const l = e.target.value as keyof typeof layout
+                            setBoardState(layout[l].start)
+                            setLayout(l)
+                        }}
+                        disabled={!$isHost()}
+                    >
+                        <For each={Object.keys(layout)}>{name => <option value={name}>{name}</option>}</For>
+                    </select>
                     <button type="button" onClick={becomeHost} disabled={$state() !== 'wait'}>
                         become host
                     </button>
