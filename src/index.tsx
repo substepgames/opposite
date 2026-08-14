@@ -7,7 +7,14 @@ import { wslobbyUrl } from './constant'
 import './index.css'
 
 type State = 'invite' | 'wait' | 'move' | 'opponent'
-type Message = { command: 'connected' } | { command: 'color'; isWhite: boolean } | { command: 'move'; state: number[] }
+type Message =
+    | { command: 'connected' }
+    | {
+          command: 'state'
+          state: number[]
+          byWhite: boolean
+          moved: boolean
+      }
 
 // biome-ignore format:
 const layout = {
@@ -27,17 +34,17 @@ const layout = {
 }
 
 const Main: Component = () => {
-    const pad = 0.1
+    const pad = 0.08
     const scale = scaleLinear()
         .domain([0, 1])
         .range([pad, 1 - pad])
 
     let ws: WebSocket
-    let isHost = true
 
     const [$lobbyId, setLobbyId] = createSignal(0)
     const [$state, setState] = createSignal<State>('invite')
     const [$isWhite, setIsWhite] = createSignal(Math.random() > 0.5)
+    const [$isHost, setIsHost] = createSignal(true)
     const [$boardState, setBoardState] = createSignal(layout.start)
     const [$activePiece, setActivePiece] = createSignal<number | undefined>()
 
@@ -49,7 +56,7 @@ const Main: Component = () => {
     onMount(async () => {
         let lobbyId = Number.parseInt(location.pathname.slice(1))
         if (!Number.isNaN(lobbyId)) {
-            isHost = false
+            setIsHost(false)
             setState('wait')
         } else {
             lobbyId = Math.floor(Math.random() * 10000)
@@ -64,22 +71,20 @@ const Main: Component = () => {
             switch (msg.command) {
                 case 'connected': {
                     if ($state() === 'invite') setState($isWhite() ? 'move' : 'opponent')
-                    if (isHost) {
-                        sendMessage({ command: 'color', isWhite: !$isWhite() })
-                        sendMessage({ command: 'move', state: $boardState() })
+                    if ($isHost()) {
+                        sendMessage({
+                            command: 'state',
+                            state: $boardState(),
+                            byWhite: $isWhite(),
+                            moved: $state() === 'opponent'
+                        })
                     }
                     break
                 }
-                case 'color': {
-                    // color command is sent by true host, you're not a host then
-                    isHost = false
-                    setIsWhite(msg.isWhite)
-                    setState(msg.isWhite ? 'move' : 'opponent')
-                    break
-                }
-                case 'move': {
+                case 'state': {
                     setBoardState(msg.state)
-                    setState('move')
+                    setIsWhite(!msg.byWhite)
+                    setState(msg.moved ? 'move' : 'opponent')
                     break
                 }
             }
@@ -189,7 +194,12 @@ const Main: Component = () => {
                 state[state.indexOf(activePiece)] = i
                 setBoardState(state)
 
-                sendMessage({ command: 'move', state: $boardState() })
+                sendMessage({
+                    command: 'state',
+                    state: $boardState(),
+                    byWhite: $isWhite(),
+                    moved: true
+                })
                 setState('opponent')
 
                 setActivePiece(undefined)
@@ -197,12 +207,21 @@ const Main: Component = () => {
     }
 
     const becomeHost = () => {
-        isHost = true
+        setIsHost(true)
         setState('invite')
     }
 
+    const newGame = () => {
+        setIsHost(true)
+        setBoardState([...layout.start])
+        const color = !$isWhite()
+        setIsWhite(color)
+        sendMessage({ command: 'state', state: $boardState(), byWhite: $isWhite(), moved: !color })
+        setState(color ? 'move' : 'opponent')
+    }
+
     const skipTurn = () => {
-        sendMessage({ command: 'move', state: $boardState() })
+        sendMessage({ command: 'state', state: $boardState(), byWhite: $isWhite(), moved: true })
         setState('opponent')
     }
 
@@ -210,7 +229,18 @@ const Main: Component = () => {
         <div class="game">
             <header>
                 <span class="title">Opposites</span>
-                <div class="state">
+                <div class="controls">
+                    <button type="button" onClick={becomeHost} disabled={$state() !== 'wait'}>
+                        become host
+                    </button>
+                    <button type="button" onClick={newGame} disabled={!$isHost()}>
+                        new game
+                    </button>
+                    <button type="button" onClick={skipTurn} disabled={$state() !== 'move'}>
+                        skip turn
+                    </button>
+                </div>
+                <div class="status">
                     <Switch>
                         <Match when={$state() === 'invite'}>
                             <span>
@@ -228,15 +258,9 @@ const Main: Component = () => {
                         </Match>
                         <Match when={$state() === 'wait'}>
                             <span>waiting for host</span>
-                            <button type="button" onClick={becomeHost}>
-                                become host
-                            </button>
                         </Match>
                         <Match when={$state() === 'move'}>
                             <span>your turn ({$isWhite() ? 'white' : 'red'})</span>
-                            <button type="button" onClick={skipTurn}>
-                                skip turn
-                            </button>
                         </Match>
                         <Match when={$state() === 'opponent'}>
                             <span>opponent's turn ({$isWhite() ? 'red' : 'white'})</span>

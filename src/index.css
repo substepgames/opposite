@@ -137,13 +137,17 @@ select {
 
         .title {
             font-size: 3rem;
+            margin-bottom: 1rem;
         }
 
-        .state {
+        .controls {
             display: flex;
             align-items: center;
             gap: .5rem;
-            height: 2rem;
+        }
+
+        .status {
+            display: flex;
         }
     }
 
