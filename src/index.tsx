@@ -3,7 +3,6 @@
 import { scaleLinear, select } from 'd3'
 import { Component, Match, Switch, createEffect, createSignal, onMount } from 'solid-js'
 import { render } from 'solid-js/web'
-import { wslobbyUrl } from './constant'
 import './index.css'
 
 type State = 'invite' | 'wait' | 'move' | 'opponent'
@@ -53,7 +52,7 @@ const Main: Component = () => {
 
     const $inviteUrl = () => {
         const lobbyId = $lobbyId()
-        return `${location.protocol}://${location.host}/${lobbyId}`
+        return `${location.protocol}//${location.host}/${lobbyId}`
     }
 
     onMount(async () => {
