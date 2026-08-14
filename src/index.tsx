@@ -64,7 +64,10 @@ const Main: Component = () => {
             switch (msg.command) {
                 case 'connected': {
                     if ($state() === 'invite') setState($isWhite() ? 'move' : 'opponent')
-                    if (isHost) ws.send(JSON.stringify({ command: 'color', isWhite: !$isWhite() }))
+                    if (isHost) {
+                        sendMessage({ command: 'color', isWhite: !$isWhite() })
+                        sendMessage({ command: 'move', state: $boardState() })
+                    }
                     break
                 }
                 case 'color': {
@@ -88,7 +91,7 @@ const Main: Component = () => {
                 resolve()
             })
         )
-        ws.send(JSON.stringify({ command: 'connected' }))
+        sendMessage({ command: 'connected' })
 
         drawBoard()
     })
@@ -102,6 +105,10 @@ const Main: Component = () => {
         const boardState = $boardState()
         drawPieces(boardState)
     })
+
+    const sendMessage = (message: Message) => {
+        ws.send(JSON.stringify(message))
+    }
 
     const drawBoard = () => {
         const svg = select('#board')
@@ -182,8 +189,7 @@ const Main: Component = () => {
                 state[state.indexOf(activePiece)] = i
                 setBoardState(state)
 
-                const msg: Message = { command: 'move', state: $boardState() }
-                ws.send(JSON.stringify(msg))
+                sendMessage({ command: 'move', state: $boardState() })
                 setState('opponent')
 
                 setActivePiece(undefined)
@@ -196,8 +202,7 @@ const Main: Component = () => {
     }
 
     const skipTurn = () => {
-        const msg: Message = { command: 'move', state: $boardState() }
-        ws.send(JSON.stringify(msg))
+        sendMessage({ command: 'move', state: $boardState() })
         setState('opponent')
     }
 
