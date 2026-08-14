@@ -27,7 +27,7 @@ type Layout = {
 }
 
 // biome-ignore format:
-const layout: Record<'hourglass' | 'hourglassExtended' | 'circle' | 'ladder', Layout> = {
+const layout: Record<'hourglass' | 'hourglassExtended' | 'circle' | 'ladder' | 'novelty', Layout> = {
     hourglass: {
         nodes: [
             [0/2, 0/3], [1/2, 0/3], [2/2, 0/3],
@@ -93,6 +93,22 @@ const layout: Record<'hourglass' | 'hourglassExtended' | 'circle' | 'ladder', La
         ],
         start: [0, 1, 2, 9, 10, 11]
     },
+    novelty: {
+        nodes: [
+            [0/3, 0/3], [1/3, 0/3], [2/3, 0/3], [3/3, 0/3],
+            [0/3, 1/3], [1/3, 1/3], [2/3, 1/3], [3/3, 1/3],
+            [0/3, 2/3], [1/3, 2/3], [2/3, 2/3], [3/3, 2/3],
+                        [1/3, 3/3], [2/3, 3/3], [3/3, 3/3],
+        ],
+        edges: [
+            [0, 5], [1, 5], [2, 6], [3, 6],
+            [4, 5], [5, 6], [6, 7],
+            [8, 9], [9, 10], [10, 11],
+            [5, 9], [6, 10],
+            [12, 9], [13, 10], [14, 10],
+        ],
+        start: [0, 4, 8, 12, 13, 14]
+    },
 }
 
 const Main: Component = () => {
@@ -110,7 +126,7 @@ const Main: Component = () => {
     const [$state, setState] = createSignal<State>('invite')
     const [$color, setColor] = createSignal(Math.random() > 0.5)
     const [$isHost, setIsHost] = createSignal(true)
-    const [$layout, setLayout] = createSignal<keyof typeof layout>('hourglass')
+    const [$layout, setLayout] = createSignal<keyof typeof layout>('novelty')
     const [$boardState, setBoardState] = createSignal(layout[$layout()].start)
     const [$activePiece, setActivePiece] = createSignal<number | undefined>()
 
