@@ -56,8 +56,6 @@ const Main: Component = () => {
     }
 
     onMount(async () => {
-        await new Promise<void>(resolve => sfx.move.addEventListener('canplaythrough', () => resolve(), { once: true }))
-
         let lobbyId = Number.parseInt(location.pathname.slice(1))
         if (!(Number.isNaN(lobbyId) || lobbyId === 0)) {
             setIsHost(false)
