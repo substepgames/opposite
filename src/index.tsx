@@ -11,25 +11,54 @@ type Message =
     | {
           command: 'state'
           state: number[]
-          byWhite: boolean
-          moved: boolean
+      }
+    | {
+          command: 'new'
+          layout: keyof typeof layout
+          state: number[]
+          color: boolean
+          move: boolean
       }
 
+type Layout = {
+    nodes: number[][]
+    edges: number[][]
+    start: number[]
+}
+
 // biome-ignore format:
-const layout = {
-    nodes: [
-        [0/2, 0/3], [1/2, 0/3], [2/2, 0/3],
-        [0/2, 1/3], [1/2, 1/3], [2/2, 1/3],
-        [0/2, 2/3], [1/2, 2/3], [2/2, 2/3],
-        [0/2, 3/3], [1/2, 3/3], [2/2, 3/3],
-    ],
-    edges: [
-        [0, 1], [1, 2], [3, 4], [4, 5], [6, 7], [7, 8], [9, 10], [10, 11],
-        [0, 3], [1, 4], [2, 5],
-        [4, 7],
-        [6, 9], [7, 10], [8, 11]
-    ],
-    start: [0, 1, 2, 9, 10, 11]
+const layout: Record<'hourglass' | 'hourglassExtended', Layout> = {
+    hourglass: {
+        nodes: [
+            [0/2, 0/3], [1/2, 0/3], [2/2, 0/3],
+            [0/2, 1/3], [1/2, 1/3], [2/2, 1/3],
+            [0/2, 2/3], [1/2, 2/3], [2/2, 2/3],
+            [0/2, 3/3], [1/2, 3/3], [2/2, 3/3],
+        ],
+        edges: [
+            [0, 1], [1, 2], [3, 4], [4, 5], [6, 7], [7, 8], [9, 10], [10, 11],
+            [0, 3], [1, 4], [2, 5],
+            [4, 7],
+            [6, 9], [7, 10], [8, 11]
+        ],
+        start: [0, 1, 2, 9, 10, 11]
+    },
+    hourglassExtended: {
+        nodes: [
+            [0/2, 0/4], [1/2, 0/4], [2/2, 0/4],
+            [0/2, 1/4], [1/2, 1/4], [2/2, 1/4],
+            [0/2, 2/4], [1/2, 2/4], [2/2, 2/4],
+            [0/2, 3/4], [1/2, 3/4], [2/2, 3/4],
+            [0/2, 4/4], [1/2, 4/4], [2/2, 4/4],
+        ],
+        edges: [
+            [3, 4], [4, 5], [9, 10], [10, 11],
+            [4, 7], [7, 10],
+            [6, 7], [7, 8],
+            [0, 3], [1, 4], [2, 5], [9, 12], [10, 13], [11, 14]
+        ],
+        start: [0, 1, 2, 12, 13, 14]
+    }
 }
 
 const Main: Component = () => {
@@ -45,9 +74,10 @@ const Main: Component = () => {
 
     const [$lobbyId, setLobbyId] = createSignal(0)
     const [$state, setState] = createSignal<State>('invite')
-    const [$isWhite, setIsWhite] = createSignal(Math.random() > 0.5)
+    const [$color, setColor] = createSignal(Math.random() > 0.5)
     const [$isHost, setIsHost] = createSignal(true)
-    const [$boardState, setBoardState] = createSignal(layout.start)
+    const [$layout, setLayout] = createSignal<keyof typeof layout>('hourglassExtended')
+    const [$boardState, setBoardState] = createSignal(layout[$layout()].start)
     const [$activePiece, setActivePiece] = createSignal<number | undefined>()
 
     const $inviteUrl = () => {
@@ -72,22 +102,29 @@ const Main: Component = () => {
             console.debug('msg', msg)
             switch (msg.command) {
                 case 'connected': {
-                    if ($state() === 'invite') setState($isWhite() ? 'move' : 'opponent')
+                    if ($state() === 'invite') setState($color() ? 'move' : 'opponent')
                     if ($isHost()) {
                         sendMessage({
-                            command: 'state',
+                            command: 'new',
+                            layout: $layout(),
                             state: $boardState(),
-                            byWhite: $isWhite(),
-                            moved: $state() === 'opponent'
+                            color: !$color(),
+                            move: $state() === 'opponent'
                         })
                     }
                     break
                 }
                 case 'state': {
                     setBoardState(msg.state)
-                    setIsWhite(!msg.byWhite)
-                    setState(msg.moved ? 'move' : 'opponent')
-                    if (msg.moved) sfx.move.play()
+                    setState('move')
+                    sfx.move.play()
+                    break
+                }
+                case 'new': {
+                    setLayout(msg.layout)
+                    setBoardState(msg.state)
+                    setColor(msg.color)
+                    setState(msg.move ? 'move' : 'opponent')
                     break
                 }
             }
@@ -101,24 +138,20 @@ const Main: Component = () => {
         )
         sendMessage({ command: 'connected' })
 
-        drawBoard()
-    })
-
-    createEffect(() => {
-        console.debug(`your color is ${$isWhite() ? 'white' : 'red'}`)
+        drawBoard(layout[$layout()])
     })
 
     createEffect(() => {
         $activePiece()
         const boardState = $boardState()
-        drawPieces(boardState)
+        drawPieces(layout[$layout()], boardState)
     })
 
     const sendMessage = (message: Message) => {
         ws.send(JSON.stringify(message))
     }
 
-    const drawBoard = () => {
+    const drawBoard = (layout: Layout) => {
         const svg = select('#board')
 
         svg.selectAll('.edge')
@@ -142,7 +175,7 @@ const Main: Component = () => {
             .lower()
     }
 
-    const drawPieces = (state: number[]) => {
+    const drawPieces = (layout: Layout, state: number[]) => {
         const piecesPerPlayer = state.length / 2
         const svg = select('#board')
 
@@ -161,7 +194,7 @@ const Main: Component = () => {
                 const i = state.indexOf(d)
                 if (i < 0) return
                 const isWhitePiece = i < piecesPerPlayer
-                if (isWhitePiece !== $isWhite()) return
+                if (isWhitePiece !== $color()) return
                 const activePiece = $activePiece()
                 if (activePiece === d) {
                     setActivePiece(undefined)
@@ -197,12 +230,7 @@ const Main: Component = () => {
                 state[state.indexOf(activePiece)] = i
                 setBoardState(state)
 
-                sendMessage({
-                    command: 'state',
-                    state: $boardState(),
-                    byWhite: $isWhite(),
-                    moved: true
-                })
+                sendMessage({ command: 'state', state: $boardState() })
                 setState('opponent')
 
                 setActivePiece(undefined)
@@ -217,16 +245,17 @@ const Main: Component = () => {
     }
 
     const newGame = () => {
+        const state = [...layout[$layout()].start]
         setIsHost(true)
-        setBoardState([...layout.start])
-        const color = !$isWhite()
-        setIsWhite(color)
-        sendMessage({ command: 'state', state: $boardState(), byWhite: $isWhite(), moved: !color })
+        setBoardState(state)
+        const color = !$color()
+        setColor(color)
+        sendMessage({ command: 'new', layout: $layout(), state, color: !color, move: !color })
         setState(color ? 'move' : 'opponent')
     }
 
     const skipTurn = () => {
-        sendMessage({ command: 'state', state: $boardState(), byWhite: $isWhite(), moved: true })
+        sendMessage({ command: 'state', state: $boardState() })
         setState('opponent')
     }
 
@@ -265,10 +294,10 @@ const Main: Component = () => {
                             <span>waiting for host</span>
                         </Match>
                         <Match when={$state() === 'move'}>
-                            <span>your turn ({$isWhite() ? 'white' : 'red'})</span>
+                            <span>your turn ({$color() ? 'white' : 'red'})</span>
                         </Match>
                         <Match when={$state() === 'opponent'}>
-                            <span>opponent's turn ({$isWhite() ? 'red' : 'white'})</span>
+                            <span>opponent's turn ({$color() ? 'red' : 'white'})</span>
                         </Match>
                     </Switch>
                 </div>
